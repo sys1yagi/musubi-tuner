@@ -243,10 +243,21 @@ body,
   line-height: 1.75 !important;
 }
 .prompt-card .note-scroll textarea {
-  height: calc(1.75em * 5 + 12px) !important;
-  max-height: calc(1.75em * 5 + 12px) !important;
+  height: calc(1.75em * 14 + 12px) !important;
+  max-height: 60vh !important;
+  min-height: calc(1.75em * 10 + 12px) !important;
   overflow-y: auto !important;
-  resize: none !important;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+  scrollbar-color: #374151 #e5e7eb;
+  resize: vertical !important;
+}
+.prompt-card .note-scroll textarea::-webkit-scrollbar { width: 14px; }
+.prompt-card .note-scroll textarea::-webkit-scrollbar-track { background: #e5e7eb; }
+.prompt-card .note-scroll textarea::-webkit-scrollbar-thumb {
+  background: #374151;
+  border: 3px solid #e5e7eb;
+  border-radius: 8px;
 }
 .prompt-card .english-one { --prompt-lines: 6; }
 .prompt-card .english-parts { --prompt-lines: 12; }
@@ -554,7 +565,6 @@ def _pack_session(
     lock_prop,
     lock_bg,
     lock_light,
-    effect_key,
     finish_key,
     finish_strength,
     wear_hair_accessory,
@@ -601,7 +611,6 @@ def _pack_session(
         "lock_prop": lock_prop or "",
         "lock_bg": lock_bg or "",
         "lock_light": lock_light or "",
-        "effect_key": effect_key or "",
         "wear_parts": dict(zip(WEAR_LABEL, [wear_hair_accessory, wear_earrings, wear_neckwear, wear_wristwear, wear_handwear, wear_legwear, wear_footwear, wear_extra_accessory, wear_halo, wear_backwear, wear_tail])),
         "costume_key": costume_key or "",
         "wardrobe_version": 2,
@@ -713,7 +722,6 @@ def _build(lib: PromptLibrary):
         lock_prop,
         lock_bg,
         lock_light,
-        effect_key,
         finish_key,
         finish_strength,
         wear_hair_accessory,
@@ -748,7 +756,6 @@ def _build(lib: PromptLibrary):
             prop_mode=prop_mode if prop_mode in {"off", "pop"} else "off",
             prop_max=max(1, _int(prop_max, 1)),
             background_categories=_clean(backgrounds, bg_keys),
-            effect_key=effect_key or "",
             finish_key=finish_key or "",
             finish_strength=finish_strength,
             wear_parts=dict(zip(WEAR_LABEL, [wear_hair_accessory, wear_earrings, wear_neckwear, wear_wristwear, wear_handwear, wear_legwear, wear_footwear, wear_extra_accessory, wear_halo, wear_backwear, wear_tail])),
@@ -797,7 +804,6 @@ def _build(lib: PromptLibrary):
             lock_prop,
             lock_bg,
             lock_light,
-            effect_key,
             finish_key,
             finish_strength,
             wear_hair_accessory,
@@ -867,7 +873,6 @@ def _build(lib: PromptLibrary):
         1,
         bg_categories,
         DEFAULT_PRESENCES,
-        "",
         "",
         "",
         "",
@@ -1008,9 +1013,7 @@ def _build(lib: PromptLibrary):
                                 value="off",
                             )
                             prop_max = gr.Slider(1, 3, value=1, step=1, label="最大数")
-                    with gr.Accordion("演出・撮影質感", open=True):
-                        gr.Markdown("演出と撮影質感は、それぞれ1種類を選べます。初期値は「なし」です。")
-                        effect_key = gr.Dropdown(label="演出", choices=[("なし", "")] + _choices(lib, "effect"), value="")
+                    with gr.Accordion("撮影質感", open=True):
                         finish_key = gr.Dropdown(label="撮影質感", choices=[("なし", "")] + _choices(lib, "finish"), value="")
                         finish_strength = gr.Radio(label="質感の強さ", choices=[("弱め", "weak"), ("標準", "standard"), ("強め", "strong")], value="standard")
                         gr.Markdown("撮影質感を選ぶと、カメラの角度を残してレンズ・描写・色調を切り替えます。「なし」は元のカメラ指定です。直射フラッシュの質感は、ライティング指定も置き換えます。変更後は「プロンプトを作る」でカードを更新してください。")
@@ -1050,8 +1053,8 @@ def _build(lib: PromptLibrary):
                                 note = gr.Textbox(
                                     label="解説",
                                     value=item.get("ja") or "",
-                                    lines=5,
-                                    max_lines=5,
+                                    lines=14,
+                                    max_lines=14,
                                     interactive=True,
                                     elem_classes=["prompt-text", "note-scroll"],
                                 )
@@ -1158,7 +1161,6 @@ def _build(lib: PromptLibrary):
                 lock_prop,
                 lock_bg,
                 lock_light,
-                effect_key,
                 finish_key,
                 finish_strength,
                 wear_hair_accessory,
@@ -1195,6 +1197,8 @@ def _build(lib: PromptLibrary):
                 items = payload.get("items")
                 if not isinstance(items, list) or not all(isinstance(item, dict) for item in items):
                     items = gr.skip()
+                if payload.get("effect_key"):
+                    items = []
                 if payload.get("finish_key") and payload.get("finish_key") not in {b.key for b in lib.by_slot("finish")} :
                     items = []
                 if payload.get("wardrobe_version") != 2:
@@ -1238,7 +1242,6 @@ def _build(lib: PromptLibrary):
                     payload.get("lock_prop") if payload.get("lock_prop") in {block.key for block in prop_blocks} else "",
                     payload.get("lock_bg") if payload.get("lock_bg") in {block.key for block in bg_blocks} else "",
                     payload.get("lock_light") if payload.get("lock_light") in light_keys else "",
-                    payload.get("effect_key") if payload.get("effect_key") in {b.key for b in lib.by_slot("effect")} else "",
                     payload.get("finish_key") if payload.get("finish_key") in {b.key for b in lib.by_slot("finish")} else "",
                     payload.get("finish_strength") if payload.get("finish_strength") in {"weak", "standard", "strong"} else "standard",
                     (payload.get("wear_parts") or {}).get("hair_accessory", "inherit") if isinstance(payload.get("wear_parts"), dict) and (payload.get("wear_parts") or {}).get("hair_accessory", "inherit") in {"inherit", "none", "random", *(b.key for b in lib.by_slot("hair_accessory"))} else "inherit",

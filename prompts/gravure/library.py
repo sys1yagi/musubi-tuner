@@ -36,7 +36,6 @@ KEY_PREFIX = {
     "prop": "prop",
     "background": "bg",
     "lighting": "light",
-    "effect": "fx",
     "finish": "finish",
     "negative": "neg",
 }
@@ -63,7 +62,6 @@ SLOT_LABEL = {
     "prop": "小道具",
     "background": "背景",
     "lighting": "ライティング",
-    "effect": "演出",
     "finish": "撮影質感",
     "negative": "ネガティブ",
 }
@@ -144,7 +142,6 @@ class Options:
     hair_pools: tuple[str, ...] = ()
     accessory_pools: tuple[str, ...] = ()
     wear_parts: dict[str, str] = field(default_factory=dict)
-    effect_key: str = ""
     finish_key: str = ""
     finish_strength: str = "standard"
     prop_mode: str = "off"
@@ -590,9 +587,6 @@ def _draw_one(lib: PromptLibrary, rng: random.Random, options: Options) -> list[
         body = "\n".join(text for _, text, _ in scene)
         note = "\n\n".join(item for _, _, item in scene if item)
         rows.append(("シーン", keys, body, note))
-    effect = lib.blocks.get(options.effect_key)
-    if effect is not None and effect.slot == "effect":
-        rows.append(("演出", effect.key, effect.text, effect.ja))
     if capture is not None:
         strength = {
             "weak": ("Keep the characteristic color response, with only slight grain, noise or optical softness.", "発色の特徴は残し、粒子・ノイズ・光学的な柔らかさは控えめにします。"),
